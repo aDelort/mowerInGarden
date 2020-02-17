@@ -7,7 +7,6 @@ import numpy as np
 dt = 0.1
 largeur = 800
 hauteur = 500
-walls = [[0,250],[0,500],[800,500],[800,0],[250,0],[250,250]]
 
 ## Classes
 class FenPrincipale(Tk):
@@ -25,8 +24,6 @@ class FenPrincipale(Tk):
         self._stop.pack(side=LEFT)
         self._quit.pack(side=LEFT)
 
-        for nWalls in range(len(walls)):
-            self._garden.create_line(walls[nWalls-1],walls[nWalls],width=10)
 
     def start(self):
         if self._garden._stopped:
@@ -49,6 +46,10 @@ class Garden(Canvas):
         self._mower = Mower()
         self._turtle = self.create_oval(self._mower._x - self._mower._size, self._mower._y - self._mower._size, self._mower._x + self._mower._size, self._mower._y + self._mower._size, outline='grey',width=4,fill='red')
         self._stopped = True
+        self._walls = [(0,250),(0,500),(800,500),(800,0),(250,0),(250,250)]
+        self._nbWalls = len(self._walls)
+        for i in range(self._nbWalls):
+            self.create_line(self._walls[i-1],self._walls[i],width=10)
     
     def getDimensions(self):
         return [largeur,hauteur]
@@ -58,48 +59,47 @@ class Garden(Canvas):
             self.moveMower(dt)
             self.after(1,self.show)
 
+
     def moveMower(self,dt):
-        self._walls = walls
-        self._nbWalls = len(self._walls)
         distRebond = -1
         for i in range(self._nbWalls):
             #Coordinates of a wall
-            [x1Wall,y1Wall] = self._walls[i-1]
-            [x2Wall,y2Wall] = self._walls[i]
+            x3,y3,x4,y4 = self._walls[i-1]+self._walls[i] #A CHANGER C MOCHE
+            wall = Segment(x3,y3,x4,y4)
 
             #Fictive mower path (if there is no wall)
-            [x1,y1] = [self._mower._x,self._mower._y]
-            [x2,y2] = [self._mower._x + self._mower._vx*dt,self._mower._y + self._mower._vy*dt]
+            path = Segment(self._mower._x,self._mower._y,self._mower._x + self._mower._vx*dt,self._mower._y + self._mower._vy*dt)
 
-            x0 = ((y1Wall*x2Wall-x1Wall*y2Wall)*(x2-x1)-(x2Wall-x1Wall)*(x2*y1-x1*y2))/((y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1))
-            y0 = ((y1Wall*x2Wall-x1Wall*y2Wall)*(y2-y1)-(y2Wall-y1Wall)*(x2*y1-x1*y2))/((y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1))
-            if (y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1) != 0:
-                if x1Wall != x2Wall:
-                    if x0 > min(x1,x2) and x0 <= max(x1,x2) and x0 > min(x1Wall,x2Wall) and x0 <= max(x1Wall,x2Wall):
-                        distRebondTmp = (x0-x1)**2+(y0-y1)**2
+            #Calcul of the eventual intersection between the wall and the path of the mower
+            x0,y0 = path.intersection(wall)
+
+            if not path.parallel(wall):
+                if not wall.vertical():
+                    if path.intersects(wall,True):
+                        distRebondTmp = (x0-self._mower._x)**2+(y0-self._mower._y)**2
                         if distRebond < 0 or distRebondTmp < distRebond:
                             distRebond = distRebondTmp
                             dx = 0
                             dy = 0
                             xR = x0
                             yR = y0
-                            mx1R = x1Wall
-                            my1R = y1Wall
-                            mx2R = x2Wall
-                            my2R = y2Wall
+                            mx1R = x3
+                            my1R = y3
+                            mx2R = x4
+                            my2R = y4
                 else:
-                    if y0 > min(y1,y2) and y0 < max(y1,y2) and y0 > min(y1Wall,y2Wall) and y0 < max(y1Wall,y2Wall):
-                        distRebondTmp = (x0-x1)**2+(y0-y1)**2
+                    if path.intersects(wall,False):
+                        distRebondTmp = (x0-self._mower._x)**2+(y0-self._mower._y)**2
                         if distRebond < 0 or distRebondTmp < distRebond:
                             distRebond = distRebondTmp
                             dx = 0
                             dy = 0
                             xR = x0
                             yR = y0
-                            mx1R = x1Wall
-                            my1R = y1Wall
-                            mx2R = x2Wall
-                            my2R = y2Wall
+                            mx1R = x3
+                            my1R = y3
+                            mx2R = x4
+                            my2R = y4
         if distRebond == -1:
             dx = self._mower._vx*dt
             dy = self._mower._vy*dt
@@ -130,7 +130,50 @@ class Mower():
         self._v = (largeur**2+hauteur**2)/18000
         self._vx = self._v*np.sqrt(3)/2
         self._vy = self._v/2
-    
+
+class Segment():
+    def __init__(self,x1,y1,x2,y2):
+        self._x1 = x1
+        self._y1 = y1
+        self._x2 = x2
+        self._y2 = y2
+
+    def getCoord(self):
+        return (self._x1,self._y1,self._x2,self._y2)
+
+    def getX(self):
+        return (self._x1,self._x2)
+
+    def getY(self):
+        return (self._y1,self._y2)
+
+    '''def set(self):
+        pass'''
+
+    def intersection(self,otherSeg):
+        #Gives the coordinates of the intersection point with an other segment (segment are extended)
+        x3,y3,x4,y4 = otherSeg.getCoord()
+        x = ((y3*x4-x3*y4)*(self._x2-self._x1)-(x4-x3)*(self._x2*self._y1-self._x1*self._y2))/((self._y2-self._y1)*(x4-x3)-(y4-y3)*(self._x2-self._x1))
+        y = ((y3*x4-x3*y4)*(self._y2-self._y1)-(y4-y3)*(self._x2*self._y1-self._x1*self._y2))/((self._y2-self._y1)*(x4-x3)-(y4-y3)*(self._x2-self._x1))
+        return x,y
+
+    def parallel(self,otherSeg):
+        x3,y3,x4,y4 = otherSeg.getCoord()
+        return (self._y2-self._y1)*(x4-x3)-(y4-y3)*(self._x2-self._x1) == 0
+
+    def vertical(self):
+        return self._x1 == self._x2
+
+    def intersects(self,otherSeg,testX):
+        #ENLEVER y0
+        (x0,y0) = self.intersection(otherSeg)
+        if testX:
+            x3,x4 = otherSeg.getX()
+            return x0 > min(self._x1,self._x2) and x0 <= max(self._x1,self._x2) and x0 > min(x3,x4) and x0 <= max(x3,x4)
+        else:
+            y3,y4 = otherSeg.getY()
+            return y0 > min(self._y1,self._y2) and y0 < max(self._y1,self._y2) and y0 > min(y3,y4) and y0 < max(y3,y4)
+
             
 ## Calls
 fenetre = FenPrincipale()
