@@ -46,7 +46,8 @@ class FenPrincipale(Tk):
 class Garden(Canvas):
     def __init__(self, *args, **kwargs):
         Canvas.__init__(self, *args, **kwargs)
-        self._tortue = Mower(self)
+        self._mower = Mower()
+        self._turtle = self.create_oval(self._mower._x - self._mower._size, self._mower._y - self._mower._size, self._mower._x + self._mower._size, self._mower._y + self._mower._size, outline='grey',width=4,fill='red')
         self._stopped = True
     
     def getDimensions(self):
@@ -54,36 +55,27 @@ class Garden(Canvas):
         
     def show(self):
         if not self._stopped:
-            self._tortue.moving(dt,self)
+            self.moveMower(dt)
             self.after(1,self.show)
 
-class Mower():
-    def __init__(self,can):
-        [dimX,dimY] = can.getDimensions()
-        self._size = min(dimX,dimY)/50
-        self._x = 260
-        self._y = 10
-        self._v = (dimX**2+dimY**2)/18000
-        self._vx = self._v*np.sqrt(3)/2
-        self._vy = self._v/2
-        self._dimX = dimX
-        self._dimY = dimY
-        self._tortue = can.create_oval(self._x - self._size, self._y - self._size, self._x + self._size, self._y + self._size, outline='grey',width=4,fill='red')
-        self._murs = walls
-        self._nbMurs = len(self._murs)
-    
-    def moving(self,dt,can):
+    def moveMower(self,dt):
+        self._walls = walls
+        self._nbWalls = len(self._walls)
         distRebond = -1
-        for i in range(self._nbMurs):
-            [mx1,my1] = self._murs[i-1]
-            [mx2,my2] = self._murs[i]
-            [x1,y1] = [self._x,self._y]
-            [x2,y2] = [self._x + self._vx*dt,self._y + self._vy*dt]
-            x0 = ((my1*mx2-mx1*my2)*(x2-x1)-(mx2-mx1)*(x2*y1-x1*y2))/((y2-y1)*(mx2-mx1)-(my2-my1)*(x2-x1))
-            y0 = ((my1*mx2-mx1*my2)*(y2-y1)-(my2-my1)*(x2*y1-x1*y2))/((y2-y1)*(mx2-mx1)-(my2-my1)*(x2-x1))
-            if (y2-y1)*(mx2-mx1)-(my2-my1)*(x2-x1) != 0:
-                if mx1 != mx2:
-                    if x0 > min(x1,x2) and x0 <= max(x1,x2) and x0 > min(mx1,mx2) and x0 <= max(mx1,mx2):
+        for i in range(self._nbWalls):
+            #Coordinates of a wall
+            [x1Wall,y1Wall] = self._walls[i-1]
+            [x2Wall,y2Wall] = self._walls[i]
+
+            #Fictive mower path (if there is no wall)
+            [x1,y1] = [self._mower._x,self._mower._y]
+            [x2,y2] = [self._mower._x + self._mower._vx*dt,self._mower._y + self._mower._vy*dt]
+
+            x0 = ((y1Wall*x2Wall-x1Wall*y2Wall)*(x2-x1)-(x2Wall-x1Wall)*(x2*y1-x1*y2))/((y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1))
+            y0 = ((y1Wall*x2Wall-x1Wall*y2Wall)*(y2-y1)-(y2Wall-y1Wall)*(x2*y1-x1*y2))/((y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1))
+            if (y2-y1)*(x2Wall-x1Wall)-(y2Wall-y1Wall)*(x2-x1) != 0:
+                if x1Wall != x2Wall:
+                    if x0 > min(x1,x2) and x0 <= max(x1,x2) and x0 > min(x1Wall,x2Wall) and x0 <= max(x1Wall,x2Wall):
                         distRebondTmp = (x0-x1)**2+(y0-y1)**2
                         if distRebond < 0 or distRebondTmp < distRebond:
                             distRebond = distRebondTmp
@@ -91,12 +83,12 @@ class Mower():
                             dy = 0
                             xR = x0
                             yR = y0
-                            mx1R = mx1
-                            my1R = my1
-                            mx2R = mx2
-                            my2R = my2
+                            mx1R = x1Wall
+                            my1R = y1Wall
+                            mx2R = x2Wall
+                            my2R = y2Wall
                 else:
-                    if y0 > min(y1,y2) and y0 < max(y1,y2) and y0 > min(my1,my2) and y0 < max(my1,my2):
+                    if y0 > min(y1,y2) and y0 < max(y1,y2) and y0 > min(y1Wall,y2Wall) and y0 < max(y1Wall,y2Wall):
                         distRebondTmp = (x0-x1)**2+(y0-y1)**2
                         if distRebond < 0 or distRebondTmp < distRebond:
                             distRebond = distRebondTmp
@@ -104,31 +96,41 @@ class Mower():
                             dy = 0
                             xR = x0
                             yR = y0
-                            mx1R = mx1
-                            my1R = my1
-                            mx2R = mx2
-                            my2R = my2
+                            mx1R = x1Wall
+                            my1R = y1Wall
+                            mx2R = x2Wall
+                            my2R = y2Wall
         if distRebond == -1:
-            dx = self._vx*dt
-            dy = self._vy*dt
-            can.create_line(self._x,self._y,self._x + dx,self._y + dy,width=10)
-            self._x += dx
-            self._y += dy
-            can.move(self._tortue,dx,dy)
+            dx = self._mower._vx*dt
+            dy = self._mower._vy*dt
+            self.create_line(self._mower._x,self._mower._y,self._mower._x + dx,self._mower._y + dy,width=10)
+            self._mower._x += dx
+            self._mower._y += dy
+            self.move(self._turtle,dx,dy)
         else:
             vectIntX = my2R - my1R
             vectIntY = -(mx2R - mx1R)
-            if self._vx*vectIntX + self._vy*vectIntY > 0:
+            if self._mower._vx*vectIntX + self._mower._vy*vectIntY > 0:
                 vectIntX = -vectIntX
                 vectIntY = -vectIntY
             angle = np.pi*random()
-            newVx = self._v*np.cos(angle)
-            newVy = self._v*np.sin(angle)
+            newVx = self._mower._v*np.cos(angle)
+            newVy = self._mower._v*np.sin(angle)
             if newVx*vectIntX + newVy*vectIntY < 0:
                 newVx = -newVx
                 newVy = -newVy
-            self._vx = newVx
-            self._vy = newVy
+            self._mower._vx = newVx
+            self._mower._vy = newVy
+
+class Mower():
+    def __init__(self):
+        self._size = min(largeur,hauteur)/50
+        self._x = 260
+        self._y = 10
+        self._v = (largeur**2+hauteur**2)/18000
+        self._vx = self._v*np.sqrt(3)/2
+        self._vy = self._v/2
+    
             
 ## Calls
 fenetre = FenPrincipale()
