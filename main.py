@@ -1,16 +1,20 @@
+## Imports
 from tkinter import * 
 from random import *
 import numpy as np
+
+## Settings
 largeur = 800
 hauteur = 500
-murs = [[0,250],[0,500],[800,500],[800,0],[250,0],[250,250]]
+walls = [[0,250],[0,500],[800,500],[800,0],[250,0],[250,250]]
 
+## Classes
 class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
         self._zoneAffichage = ZoneAffichage(self,width=largeur,height=hauteur,bg='green')
-        for nMur in range(len(murs)):
-            self._zoneAffichage.create_line(murs[nMur-1],murs[nMur],width=10)
+        for nMur in range(len(walls)):
+            self._zoneAffichage.create_line(walls[nMur-1],walls[nMur],width=10)
         self._zoneAffichage.pack(padx=10,pady=10)
         self._commandes = Frame(self)
         self._commandes.pack(padx=10,pady=10)
@@ -62,7 +66,7 @@ class Tortue():
         self._dimX = dimX
         self._dimY = dimY
         self._tortue = can.create_oval(self._x - self._rayon, self._y - self._rayon, self._x + self._rayon, self._y + self._rayon, outline='grey',width=4,fill='red')
-        self._murs = murs
+        self._murs = walls
         self._nbMurs = len(self._murs)
     
     def deplacement(self,dt,can):
@@ -123,5 +127,6 @@ class Tortue():
             self._vx = newVx
             self._vy = newVy
             
+## Calls
 fenetre = FenPrincipale()
 fenetre.mainloop()
