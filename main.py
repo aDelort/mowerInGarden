@@ -4,6 +4,7 @@ from random import *
 import numpy as np
 
 ## Settings
+dt = 0.1
 largeur = 800
 hauteur = 500
 walls = [[0,250],[0,500],[800,500],[800,0],[250,0],[250,250]]
@@ -12,52 +13,54 @@ walls = [[0,250],[0,500],[800,500],[800,0],[250,0],[250,250]]
 class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self._zoneAffichage = ZoneAffichage(self,width=largeur,height=hauteur,bg='green')
-        for nMur in range(len(walls)):
-            self._zoneAffichage.create_line(walls[nMur-1],walls[nMur],width=10)
-        self._zoneAffichage.pack(padx=10,pady=10)
-        self._commandes = Frame(self)
-        self._commandes.pack(padx=10,pady=10)
-        self._demarrer = Button(self._commandes,text='Démarrer',command=self.demarrer)
-        self._demarrer.pack(side=LEFT)
-        self._stop = Button(self._commandes,text='Stop',command=self.stop)
-        self._stop.pack(side=LEFT)
-        self._quitter = Button(self._commandes,text='Quitter',command=self.quitter)
-        self._quitter.pack(side=LEFT)
+        self._garden = Garden(self,width=largeur,height=hauteur,bg='green')
+        self._commands = Frame(self)
+        self._start = Button(self._commands,text='Démarrer',command=self.start)
+        self._stop = Button(self._commands,text='Stop',command=self.stop)
+        self._quit = Button(self._commands,text='Quitter',command=self.quit)
     
-    def demarrer(self):
-        if self._zoneAffichage._arret:
-            self._zoneAffichage._arret = False
-            self._zoneAffichage.afficher()
+        self._garden.pack(padx=10,pady=10)
+        self._commands.pack(padx=10,pady=10)
+        self._start.pack(side=LEFT)
+        self._stop.pack(side=LEFT)
+        self._quit.pack(side=LEFT)
+
+        for nWalls in range(len(walls)):
+            self._garden.create_line(walls[nWalls-1],walls[nWalls],width=10)
+
+    def start(self):
+        if self._garden._stopped:
+            self._garden._stopped = False
+            self._garden.show()
 
     def stop(self):
-        self._zoneAffichage._arret = True
+        self._garden._stopped = True
 
-    def reinitialiser(self):
-        self._zoneAffichage.deleteTraces()
-        self.stop()
+    '''def deleteAll(self):
+        self._garden.deleteTraces()
+        self.stop()'''
 
-    def quitter(self):
+    def quit(self):
         self.destroy()
 
-class ZoneAffichage(Canvas):
+class Garden(Canvas):
     def __init__(self, *args, **kwargs):
         Canvas.__init__(self, *args, **kwargs)
-        self.__tortue = Tortue(self)
-        self._arret = True
+        self._tortue = Mower(self)
+        self._stopped = True
     
     def getDimensions(self):
         return [largeur,hauteur]
         
-    def afficher(self):
-        if not self._arret:
-            self.__tortue.deplacement(1,self)
-            self.after(10,self.afficher)
+    def show(self):
+        if not self._stopped:
+            self._tortue.moving(dt,self)
+            self.after(1,self.show)
 
-class Tortue():
+class Mower():
     def __init__(self,can):
         [dimX,dimY] = can.getDimensions()
-        self._rayon = min(dimX,dimY)/50
+        self._size = min(dimX,dimY)/50
         self._x = 260
         self._y = 10
         self._v = (dimX**2+dimY**2)/18000
@@ -65,11 +68,11 @@ class Tortue():
         self._vy = self._v/2
         self._dimX = dimX
         self._dimY = dimY
-        self._tortue = can.create_oval(self._x - self._rayon, self._y - self._rayon, self._x + self._rayon, self._y + self._rayon, outline='grey',width=4,fill='red')
+        self._tortue = can.create_oval(self._x - self._size, self._y - self._size, self._x + self._size, self._y + self._size, outline='grey',width=4,fill='red')
         self._murs = walls
         self._nbMurs = len(self._murs)
     
-    def deplacement(self,dt,can):
+    def moving(self,dt,can):
         distRebond = -1
         for i in range(self._nbMurs):
             [mx1,my1] = self._murs[i-1]
