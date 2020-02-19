@@ -6,18 +6,20 @@ from math import *
 import time
 
 ## Settings
-dt = 0.03
+dt = 0.01
 largeur = 800
 hauteur = 500
 mowerWidth = 10 #Path width
 speed = 2000
-walls = [(50,250),(50,450),(750,450),(750,50),(250,50),(250,250)]
+walls = [(50,250),(50,450),(750,450),(750,50),(250,50)]#,(250,250)]
+colorBeforeCut = '#020'
+colorAfterCut = '#060'
 
 ## Classes
 class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self._garden = Garden(self,width=largeur,height=hauteur,bg='green')
+        self._garden = Garden(self,width=largeur,height=hauteur,bg=colorBeforeCut)
         self._commands = Frame(self)
         self._start = Button(self._commands,text='Démarrer',command=self.start)
         self._stop = Button(self._commands,text='Stop',command=self.stop)
@@ -38,10 +40,6 @@ class FenPrincipale(Tk):
     def stop(self):
         self._garden._stopped = True
 
-    '''def deleteAll(self):
-        self._garden.deleteTraces()
-        self.stop()'''
-
     def quit(self):
         self.destroy()
 
@@ -57,7 +55,7 @@ class Garden(Canvas):
         self._currentLineId = -1
 
         for i in range(self._nbWalls):
-            self.create_line(self._walls[i-1],self._walls[i],width=2,fill='red')
+            self.create_line(self._walls[i-1],self._walls[i],width=10,fill='red')
     
     def getDimensions(self):
         return [largeur,hauteur]
@@ -112,7 +110,8 @@ class Garden(Canvas):
             self._currentLineY0 = self._mower._y
         else:
             self.delete(self._currentLineId)
-        self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=mowerWidth)
+        self._currentLineId = self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=mowerWidth,fill=colorAfterCut)
+        self.lower(self._currentLineId)
 
         self._mower._x += dx
         self._mower._y += dy
