@@ -11,7 +11,7 @@ largeur = 800
 hauteur = 500
 mowerWidth = 10 #Path width
 speed = 2000
-walls = [(50,250),(50,450),(750,450),(750,50),(250,50)]#,(250,250)]
+walls = [(50,250),(50,450),(750,450),(750,50),(250,50),(250,250)]
 colorBeforeCut = '#020'
 colorAfterCut = '#060'
 
@@ -19,6 +19,7 @@ colorAfterCut = '#060'
 class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
+        self.title('Tondeuse dans un jardin')
         self._garden = Garden(self,width=largeur,height=hauteur,bg=colorBeforeCut)
         self._commands = Frame(self)
         self._start = Button(self._commands,text='Démarrer',command=self.start)
@@ -31,9 +32,11 @@ class FenPrincipale(Tk):
         self._stop.pack(side=LEFT)
         self._quit.pack(side=LEFT)
 
+        #Binding events
+        self._garden.bind("<Button-1>",self._garden.popTurtle)
 
     def start(self):
-        if self._garden._stopped:
+        if self._garden._stopped and self._garden._turtlePopped:
             self._garden._stopped = False
             self._garden.show()
 
@@ -46,8 +49,7 @@ class FenPrincipale(Tk):
 class Garden(Canvas):
     def __init__(self, *args, **kwargs):
         Canvas.__init__(self, *args, **kwargs)
-        self._mower = Mower()
-        self._turtle = self.create_oval(self._mower._x - self._mower._size, self._mower._y - self._mower._size, self._mower._x + self._mower._size, self._mower._y + self._mower._size, outline='grey',width=4,fill='red')
+        self._turtlePopped = False
         self._stopped = True
         self._walls = walls
         self._nbWalls = len(self._walls)
@@ -56,7 +58,14 @@ class Garden(Canvas):
 
         for i in range(self._nbWalls):
             self.create_line(self._walls[i-1],self._walls[i],width=10,fill='red')
-    
+
+    def popTurtle(self,event):
+        if self._turtlePopped:
+            self.delete(self._turtle)
+        self._mower = Mower(event.x,event.y)
+        self._turtle = self.create_oval(self._mower._x - self._mower._size, self._mower._y - self._mower._size, self._mower._x + self._mower._size, self._mower._y + self._mower._size, outline='grey',width=4,fill='red')
+        self._turtlePopped = True
+
     def getDimensions(self):
         return [largeur,hauteur]
         
@@ -127,10 +136,10 @@ class Garden(Canvas):
 
 
 class Mower():
-    def __init__(self):
+    def __init__(self,x,y):
         self._size = min(largeur,hauteur)/50
-        self._x = 350
-        self._y = 350
+        self._x = x
+        self._y = y
         self._v = speed
         self._theta = np.pi/3
         self.updateSpeeds()
