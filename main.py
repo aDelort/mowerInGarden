@@ -55,12 +55,6 @@ class Garden(Canvas):
         self._nbWalls = len(self._walls)
         self._onWallIndex = -1
         self._currentLineId = -1
-<<<<<<< HEAD
-=======
-
-        #for i in range(self._nbWalls):
-        #    self.create_line(self._walls[i-1],self._walls[i],width=10,fill='red')
->>>>>>> 3f0bedbe06d4f4e9aaae8d7b0e6f002b73e04c19
         self._grass = self.create_polygon(self._walls,fill=colorBeforeCut)
         self._fence = self.create_polygon(self._walls,fill='',width=10,outline='red')
 
