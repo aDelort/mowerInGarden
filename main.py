@@ -10,7 +10,7 @@ dt = 0.01
 largeur = 800
 hauteur = 500
 mowerWidth = 10 #Path width
-speed = 2000
+speed = 20
 walls = [(50,250),(50,450),(750,450),(750,50),(250,50),(250,250)]
 colorBeforeCut = '#020'
 colorAfterCut = '#060'
@@ -55,9 +55,8 @@ class Garden(Canvas):
         self._nbWalls = len(self._walls)
         self._onWallIndex = -1
         self._currentLineId = -1
-
-        for i in range(self._nbWalls):
-            self.create_line(self._walls[i-1],self._walls[i],width=10,fill='red')
+        self._grass = self.create_polygon(self._walls,fill=colorBeforeCut)
+        self._fence = self.create_polygon(self._walls,fill='',width=10,outline='red')
 
     def popTurtle(self,event):
         if self._turtlePopped:
@@ -120,7 +119,9 @@ class Garden(Canvas):
         else:
             self.delete(self._currentLineId)
         self._currentLineId = self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=mowerWidth,fill=colorAfterCut)
-        self.lower(self._currentLineId)
+        #self.lower(self._currentLineId)
+        self.lift(self._fence)
+        self.lift(self._turtle)
 
         self._mower._x += dx
         self._mower._y += dy
@@ -176,9 +177,6 @@ class Segment():
 
     def getY(self):
         return (self._y1,self._y2)
-
-    '''def set(self):
-        pass'''
 
     def intersection(self,otherSeg):
         #Gives the coordinates of the intersection point with an other segment (segment are extended)
