@@ -7,20 +7,28 @@ import time
 
 ## Settings
 dt = 0.03
-largeur = 800
-hauteur = 500
-mowerWidth = 10 #Path width
+width = 800
+height = 500
+mowerSize = 10
+pathWidth = 10 #Mower's path width
+#walls = [(50,400),(50,450),(750,450),(750,50),(650,50),(650,400)]
 walls = [(50,250),(50,450),(750,450),(750,50),(250,50),(250,250)]
+#walls = [(50,50),(50,450),(750,450),(750,50)]
 colorBeforeCut = '#020'
 colorAfterCut = '#060'
 defaultSpeed = 500
+
+'''
+listCoords = []
+listCoordsOnWall= []
+'''
 
 ## Classes
 class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
         self.title('Tondeuse dans un jardin')
-        self._garden = Garden(self,width=largeur,height=hauteur)
+        self._garden = Garden(self,width=width,height=height)
         self._bottomCommands = Frame(self)
         self._rightCommands = Frame(self)
         self._start = Button(self._bottomCommands,text='Démarrer',command=self._garden.start)
@@ -48,7 +56,6 @@ class FenPrincipale(Tk):
         self.destroy()
 
 
-
 class Garden(Canvas):
     def __init__(self, *args, **kwargs):
         Canvas.__init__(self, *args, **kwargs)
@@ -65,12 +72,11 @@ class Garden(Canvas):
     def popTurtle(self,event):
         if self._turtlePopped:
             self.delete(self._turtle)
-        self._mower = Mower(event.x,event.y)
+            self._mower.moveTo(event.x,event.y)
+        else:
+            self._mower = Mower(event.x,event.y,mowerSize)
+            self._turtlePopped = True
         self._turtle = self.create_oval(self._mower._x - self._mower._size, self._mower._y - self._mower._size, self._mower._x + self._mower._size, self._mower._y + self._mower._size, outline='grey',width=4,fill='red')
-        self._turtlePopped = True
-
-    def getDimensions(self):
-        return [largeur,hauteur]
 
     def start(self):
         if self._stopped and self._turtlePopped:
@@ -103,6 +109,7 @@ class Garden(Canvas):
         distBounce = -1
         #Fictive mower path (if there is no wall)
         fictive_dx = self._mower._speed*cos(self._mower._theta)*dt
+        #print(fictive_dx)
         fictive_dy = self._mower._speed*sin(self._mower._theta)*dt
         for i in range(self._nbWalls):
             if i != self._onWallIndex:
@@ -139,15 +146,18 @@ class Garden(Canvas):
             #In that case, a new line is created (the mower starts to cut the grass or has just bounced on a wall)
             self._currentLineX0 = self._mower._x
             self._currentLineY0 = self._mower._y
+            # listCoordsOnWall.append((self._currentLineX0,self._currentLineY0))
         else:
             self.delete(self._mowerPath[-1])
-        self._mowerPath[-1] = self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=mowerWidth,fill=colorAfterCut)
+        self._mowerPath[-1] = self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=pathWidth,fill=colorAfterCut)
         #self.lower(self._currentLineId)
         self.lift(self._fence)
         self.lift(self._turtle)
 
         self._mower._x += dx
         self._mower._y += dy
+
+        # listCoords.append((self._mower._x,self._mower._y))
 
         if bouncesWall:
             x3,y3 = self._walls[wallIndex-1]
@@ -160,8 +170,8 @@ class Garden(Canvas):
 
 
 class Mower():
-    def __init__(self,x,y):
-        self._size = min(largeur,hauteur)/50
+    def __init__(self,x,y,size):
+        self._size = size
         self._x = x
         self._y = y
         self._speed = defaultSpeed
@@ -183,6 +193,9 @@ class Mower():
         #Calculation of a random angle
         self._theta = phi + np.pi*(rd.random()-0.5)
         self.updateSpeeds()
+
+    def moveTo(self,x,y):
+        self._x,self._y = x,y
 
 
 class Segment():
@@ -227,3 +240,10 @@ class Segment():
 fenetre = FenPrincipale()
 #fenetre.attributes('-zoomed',True)
 fenetre.mainloop()
+
+'''
+print(listCoords)
+str = '********************************************************************'
+print(str+'\n'+str)
+print(listCoordsOnWall)
+'''
