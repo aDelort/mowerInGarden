@@ -16,7 +16,7 @@ walls = [(50,250),(50,450),(750,450),(750,50),(250,50),(250,250)]
 #walls = [(50,50),(50,450),(750,450),(750,50)]
 colorBeforeCut = '#020'
 colorAfterCut = '#060'
-defaultSpeed = 500
+defaultSpeedLog = 3
 
 '''
 listCoords = []
@@ -34,8 +34,8 @@ class FenPrincipale(Tk):
         self._start = Button(self._bottomCommands,text='Démarrer',command=self._garden.start)
         self._stop = Button(self._bottomCommands,text='Stop',command=self._garden.stop)
         self._quit = Button(self._bottomCommands,text='Quitter',command=self.quit)
-        self._speedScale = Scale(self._rightCommands,label='Vitesse',command=self._garden.updateMowerSpeed,from_=0,to=5000)
-        self._speedScale.set(defaultSpeed)
+        self._speedScale = Scale(self._rightCommands,label='log(Vitesse)',command=self._garden.updateMowerSpeed,from_=-1,to=5,resolution=0.1)
+        self._speedScale.set(defaultSpeedLog)
         self._clearButton = Button(self._rightCommands,text='Effacer',command=self._garden.clear)
         
         self._rightCommands.pack(padx=10,pady=10,side=RIGHT)
@@ -93,7 +93,7 @@ class Garden(Canvas):
 
     def updateMowerSpeed(self,speed):
         if self._turtlePopped:
-            self._mower._speed = int(speed)
+            self._mower._speed = 10**float(speed)
         
     def show(self):
         if not self._stopped:
@@ -125,19 +125,23 @@ class Garden(Canvas):
                     x0,y0,doesCross = path.intersection(wall)
                     if doesCross:
                         distFictiveBounce = (x0-self._mower._x)**2+(y0-self._mower._y)**2
+                        bouncesThisWall = False
                         if not bouncesWall:
                             #If this wall is the first that mignt be crossed
                             bouncesWall = True
                             distBounce = distFictiveBounce
+                            bouncesThisWall = True
                         elif distBounce > distFictiveBounce:
                             #Another wall might be crossed : the turtle will bounce on the nearest one
                             distBounce = distFictiveBounce
-                        #Coordinates of the bound are saved
-                        bound_x = x0
-                        bound_y = y0
-                        dx = bound_x - self._mower._x
-                        dy = bound_y - self._mower._y
-                        wallIndex = i
+                            bouncesThisWall = True
+                        if bouncesThisWall:
+                            #Coordinates of the bound are saved
+                            bound_x = x0
+                            bound_y = y0
+                            dx = bound_x - self._mower._x
+                            dy = bound_y - self._mower._y
+                            wallIndex = i
 
         if not bouncesWall:
             dx,dy = fictive_dx,fictive_dy
@@ -174,7 +178,7 @@ class Mower():
         self._size = size
         self._x = x
         self._y = y
-        self._speed = defaultSpeed
+        self._speed = 10**defaultSpeedLog
         self._theta = np.pi/3
         self.updateSpeeds()
 
