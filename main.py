@@ -28,17 +28,21 @@ class FenPrincipale(Tk):
     def __init__(self):
         Tk.__init__(self)
         self.title('Tondeuse dans un jardin')
-        self._garden = Garden(self,width=width,height=height)
+        self._garden = Garden(self,width=width,height=height,cursor='dot')
         self._bottomCommands = Frame(self)
         self._rightCommands = Frame(self)
         self._start = Button(self._bottomCommands,text='Démarrer',command=self._garden.start)
         self._stop = Button(self._bottomCommands,text='Stop',command=self._garden.stop)
         self._quit = Button(self._bottomCommands,text='Quitter',command=self.quit)
-        self._speedScale = Scale(self._rightCommands,label='log(Vitesse)',command=self._garden.updateMowerSpeed,from_=-1,to=5,resolution=0.1)
+        self._bounceNumberFrame = LabelFrame(self._rightCommands,text='Rebonds')
+        self._bounceNumberLabel = Label(self._bounceNumberFrame,textvariable=self._garden._bounceNumber)
+        self._speedScale = Scale(self._rightCommands,label='log(Vitesse)',command=self._garden.updateMowerSpeed,from_=5,to=-1,resolution=0.1)
         self._speedScale.set(defaultSpeedLog)
         self._clearButton = Button(self._rightCommands,text='Effacer',command=self._garden.clear)
         
         self._rightCommands.pack(padx=10,pady=10,side=RIGHT)
+        self._bounceNumberFrame.pack(padx=10,pady=10,side=TOP)
+        self._bounceNumberLabel.pack()
         self._speedScale.pack(side=TOP,pady=50)
         self._clearButton.pack(side=TOP,pady=50)
 
@@ -68,6 +72,7 @@ class Garden(Canvas):
         self._mowerPath = [-1] #List of the id of each line 
         self._grass = self.create_polygon(self._walls,fill=colorBeforeCut)
         self._fence = self.create_polygon(self._walls,fill='',width=10,outline='black')
+        self._bounceNumber = IntVar()
 
     def popTurtle(self,event):
         if self._turtlePopped:
@@ -90,6 +95,7 @@ class Garden(Canvas):
         for lineId in self._mowerPath:
             self.delete(lineId)
         self._mowerPath = [-1]
+        self._bounceNumber.set(0)
 
     def updateMowerSpeed(self,speed):
         if self._turtlePopped:
@@ -109,7 +115,6 @@ class Garden(Canvas):
         distBounce = -1
         #Fictive mower path (if there is no wall)
         fictive_dx = self._mower._speed*cos(self._mower._theta)*dt
-        #print(fictive_dx)
         fictive_dy = self._mower._speed*sin(self._mower._theta)*dt
         for i in range(self._nbWalls):
             if i != self._onWallIndex:
@@ -154,7 +159,6 @@ class Garden(Canvas):
         else:
             self.delete(self._mowerPath[-1])
         self._mowerPath[-1] = self.create_line(self._currentLineX0,self._currentLineY0,self._mower._x + dx,self._mower._y + dy,width=pathWidth,fill=colorAfterCut)
-        #self.lower(self._currentLineId)
         self.lift(self._fence)
         self.lift(self._turtle)
 
@@ -169,6 +173,7 @@ class Garden(Canvas):
             self._mower.changeDirection(x4-x3,y4-y3)
             self._onWallIndex = wallIndex
             self._mowerPath.append(-1)
+            self._bounceNumber.set(self._bounceNumber.get()+1)
         else:
             self._onWallIndex = -1 #Indicates that the mower isn't on a wall
 
@@ -179,7 +184,7 @@ class Mower():
         self._x = x
         self._y = y
         self._speed = 10**defaultSpeedLog
-        self._theta = np.pi/3
+        self._theta = np.pi/4
         self.updateSpeeds()
 
     def updateSpeeds(self):
@@ -230,9 +235,6 @@ class Segment():
         x3,y3,x4,y4 = otherSeg.getCoord()
         return (self._y2-self._y1)*(x4-x3)-(y4-y3)*(self._x2-self._x1) == 0
 
-    def vertical(self):
-        return self._x1 == self._x2
-
     def contains(self,x0,y0):
         if self._x1 != self._x2:
             return x0 > min(self._x1,self._x2) and x0 <= max(self._x1,self._x2)
@@ -242,7 +244,6 @@ class Segment():
             
 ## Calls
 fenetre = FenPrincipale()
-#fenetre.attributes('-zoomed',True)
 fenetre.mainloop()
 
 '''
